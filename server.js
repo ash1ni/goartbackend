@@ -1,5 +1,9 @@
+const { readFile, readFileSync, readdirSync, readdir } = require('node:fs') ;
 const express = require('express');
 const { Pool } = require('pg');
+const { execSync } = require('node:child_process');
+//const fs = require('fs')
+
 
 const app = express();
 const port = 3002;
@@ -8,14 +12,44 @@ const port = 3002;
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'goartwebsite',
-  password: 'ash1ni',
+  database: 'postgres',
+  password: 'password',
   port: 5432,
 });
 
 app.use(express.json());
-app.get("/", (req,res)=>{
+async function  runDdlScripts(){
+    // const data = readFileSync('./ddl-scripts/create_users_table.sql', 'utf-8' )
+    // const result = await pool.query(data)
+    // await pool.end();
+    // console.log(result);
+    const testFolder = './ddl-scripts/';
+   // const rootPath = execSync('echo %cd%')
+    readdir(testFolder, (err, files)=>{
+        files.forEach(element => {
+           const stdout =  execSync(`psql -h localhost -U postgres -d postgres -a -f ${testFolder}\\${element}`, {encoding: 'utf-8'});
+        //console.log(stdout);
+        //console.log(element)
+        });
+    })
+    // const fileArray = []
+    // files.forEach(file => {
+    //     fileArray.push(file)
+    //     })
+    //     const result = await pool.query(data)
+    //     console.log(result);
+       }
+
+runDdlScripts();
+
+
+app.get("/", async (req,res)=>{
     res.send("hello");
+
+
+ 
+ // res.send(result);
+    
 })
 
 // Create a new user
