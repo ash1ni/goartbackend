@@ -642,3 +642,93 @@ app.delete('/collections/:id', async (req, res) => {
     res.status(500).json({ error: 'An error occurred' });
   }
 })
+// Routes
+app.get('/artwork', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM artwork');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/artwork', async (req, res) => {
+  const { collection_id, name, slug, title, description, content, tags, meta, status } = req.body;
+  const createdAt = new Date();
+  const updatedAt = createdAt;
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO artwork (collection_id, name, slug, title, description, content, tags, meta, status, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [collection_id, name, slug, title, description, content, tags, meta, status, createdAt, updatedAt]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/artwork/:id', async (req, res) => {
+  const artworkId = req.params.id;
+
+  try {
+    const { rows } = await pool.query('SELECT * FROM artwork WHERE id = $1', [artworkId]);
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Artwork not found' });
+    } else {
+      res.json(rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/artwork/:id', async (req, res) => {
+  const artworkId = req.params.id;
+  const { collection_id, name, slug, title, description, content, tags, meta, status } = req.body;
+  const updatedAt = new Date();
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE artwork SET
+       collection_id = $1, name = $2, slug = $3, title = $4, description = $5,
+       content = $6, tags = $7, meta = $8, status = $9, updated_at = $10
+       WHERE id = $11
+       RETURNING *`,
+      [collection_id, name, slug, title, description, content, tags, meta, status, updatedAt, artworkId]
+    );
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Artwork not found' });
+    } else {
+      res.json(rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/artwork/:id', async (req, res) => {
+  const artworkId = req.params.id;
+
+  try {
+    const { rows } = await pool.query('DELETE FROM artwork WHERE id = $1 RETURNING *', [artworkId]);
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Artwork not found' });
+    } else {
+      res.json({ message: 'Artwork deleted successfully' });
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
