@@ -1,4 +1,4 @@
-CREATE TABLE exhibitions (
+CREATE TABLE IF NOT EXISTS exhibitions (
   id serial PRIMARY KEY,
   title varchar(16),
   subtitle varchar(256),
