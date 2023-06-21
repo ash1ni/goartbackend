@@ -15,28 +15,11 @@ const pool = new Pool({
 app.use(express.json());
 // Reading files from migration folder.
 async function runDdlScripts() {
-  // const data = readFileSync('./ddl-scripts/create_users_table.sql', 'utf-8' )
-  // const result = await pool.query(data)
-  // await pool.end();
-  // console.log(result);
   const testFolder = "./ddl-scripts/";
-  // const rootPath = execSync('echo %cd%')
-  // readdir(testFolder, (err, files) => {
-  //   files.forEach((element) => {
       const stdout = execSync(
         `bash main.sh`,
         { encoding: "utf-8" }
       );
-      //console.log(stdout);
-      //console.log(element)
-  //   });
-  // });
-  // const fileArray = []
-  // files.forEach(file => {
-  //     fileArray.push(file)
-  //     })
-  //     const result = await pool.query(data)
-  //     console.log(result);
  }
 
 runDdlScripts();
