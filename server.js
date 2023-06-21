@@ -21,23 +21,23 @@ async function runDdlScripts() {
   // console.log(result);
   const testFolder = "./ddl-scripts/";
   // const rootPath = execSync('echo %cd%')
-  readdir(testFolder, (err, files) => {
-    files.forEach((element) => {
+  // readdir(testFolder, (err, files) => {
+  //   files.forEach((element) => {
       const stdout = execSync(
-        `psql -h localhost -U postgres -d postgres -a -f ${testFolder}\\${element}`,
+        `bash main.sh`,
         { encoding: "utf-8" }
       );
       //console.log(stdout);
       //console.log(element)
-    });
-  });
+  //   });
+  // });
   // const fileArray = []
   // files.forEach(file => {
   //     fileArray.push(file)
   //     })
   //     const result = await pool.query(data)
   //     console.log(result);
-}
+ }
 
 runDdlScripts();
 
