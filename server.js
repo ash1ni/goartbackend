@@ -1,4 +1,4 @@
-const { readFile, readFileSync, readdirSync, readdir } = require("node:fs");
+const { readFile, readFileSync, readdirSync, readdir } = require("fs");
 const express = require("express");
 const { Pool } = require("pg");
 const { execSync } = require("node:child_process");
@@ -944,3 +944,91 @@ app.delete('/events/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// GET all multimedia items
+app.get('/multimedia', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM multimedia');
+    const multimedia = result.rows;
+    res.json(multimedia);
+    client.release();
+  } catch (error) {
+    console.error('Error retrieving multimedia:', error);
+    res.status(500).send('An error occurred while retrieving multimedia');
+  }
+});
+// GET a specific multimedia item by ID
+app.get('/multimedia/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM multimedia WHERE id = $1', [id]);
+    const multimedia = result.rows[0];
+    if (multimedia) {
+      res.json(multimedia);
+    } else {
+      res.status(404).send(`Multimedia item with ID ${id} not found`);
+    }
+    client.release();
+  } catch (error) {
+    console.error(`Error retrieving multimedia item with ID ${id}:`, error);
+    res.status(500).send('An error occurred while retrieving the multimedia item');
+  }
+});
+// POST a new multimedia item
+app.post('/multimedia', async (req, res) => {
+  const { title, subtitle, content, slug, content_type, position, status } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO multimedia (title, subtitle, content, slug, content_type, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [title, subtitle, content, slug, content_type, position, status]
+    );
+    const newMultimedia = result.rows[0];
+    res.json(newMultimedia);
+    client.release();
+  } catch (error) {
+    console.error('Error creating multimedia item:', error);
+    res.status(500).send('An error occurred while creating the multimedia item');
+  }
+});
+   // PUT/UPDATE a multimedia item by ID
+   app.put('/multimedia/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, subtitle, content, slug, content_type, position, status } = req.body;
+    try {
+      const client = await pool.connect();
+      const result = await client.query(
+        'UPDATE multimedia SET title = $1, subtitle = $2, content = $3, slug = $4, content_type = $5, position = $6, status = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
+        [title, subtitle, content, slug, content_type, position, status, id]
+      );
+      const updatedMultimedia = result.rows[0];
+      if (updatedMultimedia) {
+        res.json(updatedMultimedia);
+      } else {
+        res.status(404).send(`Multimedia item with ID ${id} not found`);
+      }
+      client.release();
+    } catch (error) {
+      console.error(`Error updating multimedia item with ID ${id}:`, error);
+      res.status(500).send('An error occurred while updating the multimedia item');
+    }
+  });
+  // DELETE a multimedia item by ID
+  app.delete('/multimedia/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const client = await pool.connect();
+      const result = await client.query('DELETE FROM multimedia WHERE id = $1 RETURNING *', [id]);
+      const deletedMultimedia = result.rows[0];
+      if (deletedMultimedia) {
+        res.json(deletedMultimedia);
+      } else {
+        res.status(404).send(`Multimedia item with ID ${id} not found`);
+      }
+      client.release();
+    } catch (error) {
+      console.error(`Error deleting multimedia item with ID ${id}:`, error);
+      res.status(500).send('An error occurred while deleting the multimedia item');
+    }
+  });
