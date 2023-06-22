@@ -4,11 +4,11 @@ WHEN duplicate_object THEN null;
 END $$;
 CREATE TABLE IF NOT EXISTS multimedia(
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
     subtitle VARCHAR(255),
     content TEXT,
     slug VARCHAR(255),
-    content_type c_type NOT NULL,
+    content_type c_type,
     position smallint,
     status BOOLEAN,
     created_at TIMESTAMPTZ DEFAULT NOW(),
