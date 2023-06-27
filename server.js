@@ -2,7 +2,7 @@ const { readFile, readFileSync, readdirSync, readdir } = require("fs");
 const express = require("express");
 const { Pool } = require("pg");
 const { execSync } = require("node:child_process");
-const cors = require('cors');
+const cors = require("cors");
 
 //const fs = require('fs')
 
@@ -18,11 +18,8 @@ app.use(express.json());
 // Reading files from migration folder.
 async function runDdlScripts() {
   const testFolder = "./ddl-scripts/";
-      const stdout = execSync(
-        `bash main.sh`,
-        { encoding: "utf-8" }
-      );
- }
+  const stdout = execSync(`bash main.sh`, { encoding: "utf-8" });
+}
 
 runDdlScripts();
 
@@ -828,8 +825,7 @@ app.put("/exhibitions/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { title, subtitle, content, slug, tags, position, status } = req.body;
-    const query =
-      `UPDATE exhibitions SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = current_timestamp WHERE id = $8 RETURNING *`;
+    const query = `UPDATE exhibitions SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = current_timestamp WHERE id = $8 RETURNING *`;
     const values = [title, subtitle, content, slug, tags, position, status, id];
     const result = await pool.query(query, values);
     if (result.rows.length === 0) {
@@ -839,11 +835,9 @@ app.put("/exhibitions/:id", async (req, res) => {
     }
   } catch (error) {
     console.error("Error updating exhibition:", error);
-    res
-      .status(500)
-      .json({
-        error: "An error occurred while retrieving exhibitions by id. ",
-      });
+    res.status(500).json({
+      error: "An error occurred while retrieving exhibitions by id. ",
+    });
   }
 });
 // Delete an exhibition
@@ -865,106 +859,113 @@ app.delete("/exhibitions/:id", async (req, res) => {
   }
 });
 
-
 // GET all events
-app.get('/events', async (req, res) => {
+app.get("/events", async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM events');
+    const { rows } = await pool.query("SELECT * FROM events");
     res.json(rows);
   } catch (error) {
-    console.error('Error retrieving events:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error retrieving events:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 // GET a specific event by ID
-app.get('/events/:id', async (req, res) => {
+app.get("/events/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { rows } = await pool.query('SELECT * FROM events WHERE id = $1', [id]);
+    const { rows } = await pool.query("SELECT * FROM events WHERE id = $1", [
+      id,
+    ]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: "Event not found" });
     }
 
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error retrieving event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error retrieving event:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 // POST a new event
-app.post('/events', async (req, res) => {
+app.post("/events", async (req, res) => {
   const { title, subtitle, content, slug, tags, position, status } = req.body;
 
   try {
     const { rows } = await pool.query(
-      'INSERT INTO events (title, subtitle, content, slug, tags, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      "INSERT INTO events (title, subtitle, content, slug, tags, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [title, subtitle, content, slug, tags, position, status]
     );
 
     res.status(201).json(rows[0]);
   } catch (error) {
-    console.error('Error creating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error creating event:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 // PUT (update) an existing event
-app.put('/events/:id', async (req, res) => {
+app.put("/events/:id", async (req, res) => {
   const { id } = req.params;
   const { title, subtitle, content, slug, tags, position, status } = req.body;
 
   try {
     const { rows } = await pool.query(
-      'UPDATE events SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
+      "UPDATE events SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = NOW() WHERE id = $8 RETURNING *",
       [title, subtitle, content, slug, tags, position, status, id]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: "Event not found" });
     }
 
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error updating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error updating event:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-app.delete('/events/:id', async (req, res) => {
+app.delete("/events/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { rows } = await pool.query('DELETE FROM events WHERE id = $1 RETURNING *', [id]);
+    const { rows } = await pool.query(
+      "DELETE FROM events WHERE id = $1 RETURNING *",
+      [id]
+    );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    res.json({ message: 'Event deleted successfully' });
+    res.json({ message: "Event deleted successfully" });
   } catch (error) {
-    console.error('Error deleting event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error deleting event:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 // GET all multimedia items
-app.get('/multimedia', async (req, res) => {
+app.get("/multimedia", async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM multimedia');
+    const result = await client.query("SELECT * FROM multimedia");
     const multimedia = result.rows;
     res.json(multimedia);
     client.release();
   } catch (error) {
-    console.error('Error retrieving multimedia:', error);
-    res.status(500).send('An error occurred while retrieving multimedia');
+    console.error("Error retrieving multimedia:", error);
+    res.status(500).send("An error occurred while retrieving multimedia");
   }
 });
 // GET a specific multimedia item by ID
-app.get('/multimedia/:id', async (req, res) => {
+app.get("/multimedia/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM multimedia WHERE id = $1', [id]);
+    const result = await client.query(
+      "SELECT * FROM multimedia WHERE id = $1",
+      [id]
+    );
     const multimedia = result.rows[0];
     if (multimedia) {
       res.json(multimedia);
@@ -974,203 +975,306 @@ app.get('/multimedia/:id', async (req, res) => {
     client.release();
   } catch (error) {
     console.error(`Error retrieving multimedia item with ID ${id}:`, error);
-    res.status(500).send('An error occurred while retrieving the multimedia item');
+    res
+      .status(500)
+      .send("An error occurred while retrieving the multimedia item");
   }
 });
 // POST a new multimedia item
-app.post('/multimedia', async (req, res) => {
-  const { title, subtitle, content, slug, content_type, position, status } = req.body;
+app.post("/multimedia", async (req, res) => {
+  const { title, subtitle, content, slug, content_type, position, status } =
+    req.body;
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO multimedia (title, subtitle, content, slug, content_type, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      "INSERT INTO multimedia (title, subtitle, content, slug, content_type, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [title, subtitle, content, slug, content_type, position, status]
     );
     const newMultimedia = result.rows[0];
     res.json(newMultimedia);
     client.release();
   } catch (error) {
-    console.error('Error creating multimedia item:', error);
-    res.status(500).send('An error occurred while creating the multimedia item');
+    console.error("Error creating multimedia item:", error);
+    res
+      .status(500)
+      .send("An error occurred while creating the multimedia item");
   }
 });
-   // PUT/UPDATE a multimedia item by ID
-   app.put('/multimedia/:id', async (req, res) => {
-    const { id } = req.params;
-    const { title, subtitle, content, slug, content_type, position, status } = req.body;
-    try {
-      const client = await pool.connect();
-      const result = await client.query(
-        'UPDATE multimedia SET title = $1, subtitle = $2, content = $3, slug = $4, content_type = $5, position = $6, status = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
-        [title, subtitle, content, slug, content_type, position, status, id]
-      );
-      const updatedMultimedia = result.rows[0];
-      if (updatedMultimedia) {
-        res.json(updatedMultimedia);
-      } else {
-        res.status(404).send(`Multimedia item with ID ${id} not found`);
-      }
-      client.release();
-    } catch (error) {
-      console.error(`Error updating multimedia item with ID ${id}:`, error);
-      res.status(500).send('An error occurred while updating the multimedia item');
+// PUT/UPDATE a multimedia item by ID
+app.put("/multimedia/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, subtitle, content, slug, content_type, position, status } =
+    req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      "UPDATE multimedia SET title = $1, subtitle = $2, content = $3, slug = $4, content_type = $5, position = $6, status = $7, updated_at = NOW() WHERE id = $8 RETURNING *",
+      [title, subtitle, content, slug, content_type, position, status, id]
+    );
+    const updatedMultimedia = result.rows[0];
+    if (updatedMultimedia) {
+      res.json(updatedMultimedia);
+    } else {
+      res.status(404).send(`Multimedia item with ID ${id} not found`);
     }
-  });
-  // DELETE a multimedia item by ID
-  app.delete('/multimedia/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-      const client = await pool.connect();
-      const result = await client.query('DELETE FROM multimedia WHERE id = $1 RETURNING *', [id]);
-      const deletedMultimedia = result.rows[0];
-      if (deletedMultimedia) {
-        res.json(deletedMultimedia);
-      } else {
-        res.status(404).send(`Multimedia item with ID ${id} not found`);
-      }
-      client.release();
-    } catch (error) {
-      console.error(`Error deleting multimedia item with ID ${id}:`, error);
-      res.status(500).send('An error occurred while deleting the multimedia item');
+    client.release();
+  } catch (error) {
+    console.error(`Error updating multimedia item with ID ${id}:`, error);
+    res
+      .status(500)
+      .send("An error occurred while updating the multimedia item");
+  }
+});
+// DELETE a multimedia item by ID
+app.delete("/multimedia/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      "DELETE FROM multimedia WHERE id = $1 RETURNING *",
+      [id]
+    );
+    const deletedMultimedia = result.rows[0];
+    if (deletedMultimedia) {
+      res.json(deletedMultimedia);
+    } else {
+      res.status(404).send(`Multimedia item with ID ${id} not found`);
     }
-  });
+    client.release();
+  } catch (error) {
+    console.error(`Error deleting multimedia item with ID ${id}:`, error);
+    res
+      .status(500)
+      .send("An error occurred while deleting the multimedia item");
+  }
+});
 
 // Get all pick_artworks
-app.get('/pick_artworks', async (req, res) => {
+app.get("/pick_artworks", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM pick_artworks');
+    const result = await pool.query("SELECT * FROM pick_artworks");
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching pick_artworks:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching pick_artworks:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 // Get a pick_artwork by ID
-app.get('/pick_artworks/:id', async (req, res) => {
+app.get("/pick_artworks/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM pick_artworks WHERE id = $1', [id]);
+    const result = await pool.query(
+      "SELECT * FROM pick_artworks WHERE id = $1",
+      [id]
+    );
     const pick_artwork = result.rows[0];
     if (pick_artwork) {
       res.json(pick_artwork);
-      } else {
-        res.status(404).send(`Pick_artwork with ID ${id} not found`);
-        }
-        } catch (error) {
-          console.error(`Error fetching pick_artwork with ID ${id}:`, error);
-          res.status(500).json({ error: 'Internal Server Error' });
-          }
+    } else {
+      res.status(404).send(`Pick_artwork with ID ${id} not found`);
+    }
+  } catch (error) {
+    console.error(`Error fetching pick_artwork with ID ${id}:`, error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Create a new pick_artwork
-app.post('/pick_artworks', async (req, res) => {
+app.post("/pick_artworks", async (req, res) => {
   const { artwork_id, position, status } = req.body;
-  
+
   // Validate request body
   if (!artwork_id || !position || !status) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
     const result = await pool.query(
-      'INSERT INTO pick_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *',
+      "INSERT INTO pick_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *",
       [artwork_id, position, status]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating pick_artwork:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error creating pick_artwork:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
 // Update a pick_artwork
-app.put('/pick_artworks/:id', async (req, res) => {
+app.put("/pick_artworks/:id", async (req, res) => {
   const { id } = req.params;
   const { artwork_id, position, status } = req.body;
-  
+
   // Validate request body
   if (!artwork_id || !position || !status) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
     const result = await pool.query(
-      'UPDATE pick_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *',
+      "UPDATE pick_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *",
       [artwork_id, position, status, id]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Pick artwork not found' });
+      return res.status(404).json({ error: "Pick artwork not found" });
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating pick_artwork:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error updating pick_artwork:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
 // Delete a pick_artwork
-app.delete('/pick_artworks/:id', async (req, res) => {
+app.delete("/pick_artworks/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM pick_artworks WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query(
+      "DELETE FROM pick_artworks WHERE id = $1 RETURNING *",
+      [id]
+    );
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Pick artwork not found' });
-      }
-      res.json(result.rows[0]);
-      } catch (error) {
-        console.error('Error deleting pick_artwork:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-        }
+      return res.status(404).json({ error: "Pick artwork not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error deleting pick_artwork:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Get all spotlight_artworks
-app.get('/spotlight_artworks', async (req, res) => {
+app.get("/spotlight_artworks", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM spotlight_artworks');
+    const result = await pool.query("SELECT * FROM spotlight_artworks");
     res.json(result.rows);
-    } catch (error) {
-      console.error('Error getting spotlight_artworks:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-      }
+  } catch (error) {
+    console.error("Error getting spotlight_artworks:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Get spotlight_artwork by id
-app.get('/spotlight_artworks/:id', async (req, res) => {
+app.get("/spotlight_artworks/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM spotlight_artworks WHERE id = $1', [id]);
+    const result = await pool.query(
+      "SELECT * FROM spotlight_artworks WHERE id = $1",
+      [id]
+    );
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Spotlight artwork not found' });
-      }
-      res.json(result.rows[0]);
-      } catch (error) {
-        console.error('Error getting spotlight_artwork:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-        }
+      return res.status(404).json({ error: "Spotlight artwork not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error getting spotlight_artwork:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Create a new spotlight artwork
-app.post('/spotlight_artworks', async (req, res) => {
+app.post("/spotlight_artworks", async (req, res) => {
   const { artwork_id, position, status } = req.body;
   try {
-    const result = await pool.query('INSERT INTO spotlight_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *', [artwork_id, position, status]);
+    const result = await pool.query(
+      "INSERT INTO spotlight_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *",
+      [artwork_id, position, status]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error executing query", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update an existing spotlight artwork
+app.put("/spotlight_artworks/:id", async (req, res) => {
+  const id = req.params.id;
+  const { artwork_id, position, status } = req.body;
+  try {
+    const result = await pool.query(
+      "UPDATE spotlight_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *",
+      [artwork_id, position, status, id]
+    );
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Spotlight artwork not found" });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error("Error executing query", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Delete a spotlight artwork
+app.delete("/spotlight_artworks/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query(
+      "DELETE FROM spotlight_artworks WHERE id = $1 RETURNING *",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Spotlight artwork not found" });
+    } else {
+      res.json({ message: "Spotlight artwork deleted successfully" });
+    }
+  } catch (error) {
+    console.error("Error executing query", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get all event artworks
+app.get("/event_artworks", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM event_artworks");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error executing query", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+// Get an event artwork
+app.get("/event_artworks/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query(
+      "SELECT * FROM event_artworks WHERE id = $1",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Event artwork not found" });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error("Error executing query", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Create a new event artwork
+app.post('/event_artworks', async (req, res) => {
+  const { event_id, position, status } = req.body;
+  try {
+    const result = await pool.query('INSERT INTO event_artworks (event_id, position, status) VALUES ($1, $2, $3) RETURNING *', [event_id, position, status]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error executing query', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// Update an event artwork
 
-
-// Update an existing spotlight artwork
-app.put('/spotlight_artworks/:id', async (req, res) => {
+app.put('/event_artworks/:id', async (req, res) => {
   const id = req.params.id;
-  const { artwork_id, position, status } = req.body;
+  const { event_id, position, status } = req.body;
   try {
-    const result = await pool.query('UPDATE spotlight_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *',
-    [artwork_id, position, status, id]);
+    const result = await pool.query('UPDATE event_artworks SET event_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *', [event_id, position, status, id]);
     if (result.rowCount === 0) {
-      res.status(404).json({ error: 'Spotlight artwork not found' });
+      res.status(404).json({ error: 'Event artwork not found' });
     } else {
       res.json(result.rows[0]);
     }
@@ -1180,18 +1284,18 @@ app.put('/spotlight_artworks/:id', async (req, res) => {
   }
 });
 
-  // Delete a spotlight artwork
-  app.delete('/spotlight_artworks/:id', async (req, res) => {
-    const id = req.params.id;
-    try {
-      const result = await pool.query('DELETE FROM spotlight_artworks WHERE id = $1 RETURNING *', [id]);
-      if (result.rowCount === 0) {
-        res.status(404).json({ error: 'Spotlight artwork not found' });
-      } else {
-        res.json({ message: 'Spotlight artwork deleted successfully' });
-      }
-    } catch (error) {
-      console.error('Error executing query', error);
-      res.status(500).json({ error: 'Internal server error' });
+// Delete an event artwork
+app.delete('/event_artworks/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query('DELETE FROM event_artworks WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Event artwork not found' });
+    } else {
+      res.json({ message: 'Event artwork deleted successfully' });
     }
-  });
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
