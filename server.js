@@ -1,10 +1,12 @@
-const { readFile, readFileSync, readdirSync, readdir } = require("fs");
+const { readFile, readFileSync, readdirSync, readdir } = require("node:fs");
 const express = require("express");
 const { Pool } = require("pg");
 const { execSync } = require("node:child_process");
 const cors = require("cors");
 
-//const fs = require('fs')
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
 
 const app = express();
 const port = 3002;
@@ -1299,3 +1301,112 @@ app.delete('/event_artworks/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Fetch all media
+app.get('/media', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM media');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Fetch a specific media file by ID
+app.get('/media/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query('SELECT * FROM media WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Media file not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Store the file path in the database
+app.post('/media', async (req, res) => {
+  if (!req.body.file || !req.body.filename) {
+    res.status(400).json({ error: 'Missing file or filename' });
+    return;
+  }
+
+  const { file, filename } = req.body;
+
+
+  // Convert the base64-encoded file data to a Buffer
+  const fileData = Buffer.from(file, 'base64');
+
+  // Generate a hash code for unique file names
+  const hash = crypto.createHash('sha1');
+  hash.update(fileData);
+  const hashValue = hash.digest('hex');
+
+  // Generate a unique filename based on the hash code and original filename
+  const uniqueFilename = hashValue + '-' + filename;
+
+  try {
+    // Write the file to disk in the 'uploads' directory
+    const filePath = path.join(__dirname, 'uploads', uniqueFilename);
+    fs.writeFileSync(filePath, fileData);
+
+    // Store the file path in the database
+    const result = await pool.query('INSERT INTO media (name, path) VALUES ($1, $2) RETURNING *', [filename, filePath]);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error writing file', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update a media entry
+app.put('/api/media/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+
+  try {
+    // Check if the media entry exists
+    const media = await pool.query('SELECT * FROM media WHERE id = $1', [id]);
+    if (media.rows.length === 0) {
+      res.status(404).json({ error: 'Media entry not found' });
+      return;
+    }
+
+    // Update the name of the media entry
+    const updatedMedia = await pool.query('UPDATE media SET name = $1 WHERE id = $2 RETURNING *', [name, id]);
+
+    res.json(updatedMedia.rows[0]);
+  } catch (error) {
+    console.error('Error updating media', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Delete a media file by ID
+app.delete('/media/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query('DELETE FROM media WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Media file not found' });
+    } else {
+      const deletedFilePath = `uploads/${result.rows[0].path}`;
+      fs.unlinkSync(deletedFilePath); // Delete the actual file from the server
+      res.json({ message: 'Media file deleted successfully' });
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Serve the media files in the frontend
+app.use('/uploads', express.static('uploads'));
