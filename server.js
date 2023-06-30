@@ -1,4 +1,5 @@
 const { readFile, readFileSync, readdirSync, readdir } = require("node:fs");
+const { Readable } = require('stream');
 const express = require("express");
 const { Pool } = require("pg");
 const { execSync } = require("node:child_process");
@@ -1330,6 +1331,7 @@ app.get('/media/:id', async (req, res) => {
 });
 
 
+
 // Store the file path in the database
 app.post('/media', async (req, res) => {
   if (!req.body.file || !req.body.filename) {
@@ -1339,26 +1341,31 @@ app.post('/media', async (req, res) => {
 
   const { file, filename } = req.body;
 
-
-  // Convert the base64-encoded file data to a Buffer
-  const fileData = Buffer.from(file, 'base64');
+  // Create a Readable stream from the base64 file data
+  const fileStream = Readable.from(file, 'base64');
 
   // Generate a hash code for unique file names
   const hash = crypto.createHash('sha1');
-  hash.update(fileData);
+  hash.update(file);
   const hashValue = hash.digest('hex');
 
   // Generate a unique filename based on the hash code and original filename
   const uniqueFilename = hashValue + '-' + filename;
 
   try {
+    // Get current timestamp
+    const now = new Date();
+
     // Write the file to disk in the 'uploads' directory
     const filePath = path.join(__dirname, 'uploads', uniqueFilename);
-    fs.writeFileSync(filePath, fileData);
+    const writeStream = fs.createWriteStream(filePath);
+    fileStream.pipe(writeStream);
 
-    // Store the file path in the database
-    const result = await pool.query('INSERT INTO media (name, path) VALUES ($1, $2) RETURNING *', [filename, filePath]);
-    res.status(201).json(result.rows[0]);
+    writeStream.on('finish', async () => {
+      // Store the file path in the database
+      const result = await pool.query('INSERT INTO media (name, path, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $4) RETURNING *', [filename, filePath, true, now]);
+      res.status(201).json(result.rows[0]);
+    });
   } catch (error) {
     console.error('Error writing file', error);
     res.status(500).json({ error: 'Internal server error' });
