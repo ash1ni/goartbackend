@@ -3,6 +3,6 @@ CREATE TABLE IF NOT EXISTS media(
     name VARCHAR(255),
     path VARCHAR(256),
     status BOOLEAN,
-    created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
