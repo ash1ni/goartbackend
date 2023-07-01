@@ -1583,3 +1583,82 @@ app.delete('/collection_media/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// GET all artwork_media records
+app.get('/artwork_media', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM artwork_media');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET a specific artwork_media record by ID
+app.get('/artwork_media/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM artwork_media WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Artwork media not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// POST a new artwork_media record
+app.post('/artwork_media', async (req, res) => {
+  const { artwork_id, media_id, position } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO artwork_media (artwork_id, media_id, position) VALUES ($1, $2, $3) RETURNING *',
+      [artwork_id, media_id, position]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT to update a specific artwork_media record by ID
+app.put('/artwork_media/:id', async (req, res) => {
+  const { id } = req.params;
+  const { artwork_id, media_id, position } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE artwork_media SET artwork_id = $1, media_id = $2, position = $3 WHERE id = $4 RETURNING *',
+      [artwork_id, media_id, position, id]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Artwork media not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE an artwork_media record by ID
+app.delete('/artwork_media/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM artwork_media WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Artwork media not found' });
+    } else {
+      res.json({ message: 'Artwork media deleted successfully' });
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
