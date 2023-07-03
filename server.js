@@ -1662,3 +1662,81 @@ app.delete('/artwork_media/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// GET all exhibition_media records
+app.get('/exhibition_media', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM exhibition_media');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET a specific exhibition_media record by ID
+app.get('/exhibition_media/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM exhibition_media WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Exhibition media not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST a new exhibition_media record
+app.post('/exhibition_media', async (req, res) => {
+  const { exhibition_id, media_id, position } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO exhibition_media (exhibition_id, media_id, position) VALUES ($1, $2, $3) RETURNING *',
+      [exhibition_id, media_id, position]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT to update a specific exhibition_media record by ID
+app.put('/exhibition_media/:id', async (req, res) => {
+  const { id } = req.params;
+  const { exhibition_id, media_id, position } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE exhibition_media SET exhibition_id = $1, media_id = $2, position = $3 WHERE id = $4 RETURNING *',
+      [exhibition_id, media_id, position, id]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Exhibition media not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE an exhibition_media record by ID
+app.delete('/exhibition_media/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM exhibition_media WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Exhibition media not found' });
+    } else {
+      res.json({ message: 'Exhibition media deleted successfully' });
+    }
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
