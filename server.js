@@ -16,6 +16,13 @@ const port = 3002;
 const pool = new Pool({
   connectionString: "postgres://postgres:password@localhost:5432/postgres",
 });
+const corsOptions ={
+  origin:'*', 
+  credentials:true,            //access-control-allow-credentials:true
+  optionSuccessStatus:200,
+}
+
+app.use(cors(corsOptions)) // Use this after the variable declaration
 
 app.use(express.json());
 // Reading files from migration folder.
