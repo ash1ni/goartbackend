@@ -4,11 +4,13 @@ const express = require("express");
 const { Pool } = require("pg");
 const { execSync } = require("node:child_process");
 const cors = require("cors");
-
+require('dotenv').config();
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-
+const session = require('express-session')
+const pgSession = require('connect-pg-simple')(session);
+const bcrypt = require('bcrypt');
 const app = express();
 const port = 3002;
 const corsOptions = {
@@ -25,6 +27,7 @@ const pool = new Pool({
 app.use(cors(corsOptions)); // Use this after the variable declaration
 
 app.use(express.json());
+
 // Reading files from migration folder.
 async function runDdlScripts() {
   const testFolder = "./ddl-scripts/";
@@ -39,24 +42,47 @@ app.get("/", async (req, res) => {
   // res.send(result);
 });
 
-// Create a new user
-app.post("/users", async (req, res) => {
+const sessionOptions = {
+  store: new pgSession({
+    // Configure the PostgreSQL connection details
+    conString: "postgres://postgres:password@localhost/postgres",
+    tableName: "session",
+  }),
+  secret: "$2b$10$jKiND5.3H8HkQY5S/HKeTuTqVL.8UTjOCKLmbYVu4VNaJo/mOy4zS", // Replace with your own session secret
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // Set the session duration (30 days in this example)
+    secure: true, // Set to true if using HTTPS
+    httpOnly: true,
+  },
+};
+
+app.use(session(sessionOptions));
+
+app.post("/users", authenticateSession, async (req, res) => {
   try {
-    const { username, password, email, first_name, last_name, role, status } =
-      req.body;
+    // Check if the user has the necessary role to create a new user
+    if (req.session.userRole !== "admin") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { username, password, email, first_name, last_name, user_role, status } = req.body;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const query = `INSERT INTO users
-      (username, password, email, first_name, last_name, role, status)
+      (username, password, email, first_name, last_name, user_role, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`;
 
     const values = [
       username,
-      password,
+      hashedPassword,
       email,
       first_name,
       last_name,
-      role,
+      user_role,
       status,
     ];
 
@@ -71,109 +97,210 @@ app.post("/users", async (req, res) => {
   }
 });
 
-// Get all users
-app.get("/users", async (req, res) => {
+
+app.post("/users/login", async (req, res) => {
   try {
-    const query = "SELECT * FROM users";
-    const client = await pool.connect();
-    const result = await client.query(query);
-    client.release();
+    const { username, password } = req.body;
 
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Get a specific user by ID
-app.get("/users/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = "SELECT * FROM users WHERE id = $1";
-    const values = [id];
+    const query = `SELECT * FROM users WHERE username = $1`;
+    const values = [username];
 
     const client = await pool.connect();
     const result = await client.query(query, values);
-    client.release();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (passwordMatch) {
+        req.session.username = user.username;
+        req.session.userRole = user.user_role;
+        res.json({ message: "Login successful" });
+      } else {
+        res.status(401).json({ error: "Invalid credentials" });
+      }
+    } else {
+      res.status(401).json({ error: "Invalid credentials" });
     }
 
-    res.json(result.rows[0]);
+    client.release();
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Update a user by ID
-app.put("/users/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { username, password, email, first_name, last_name, role, status } =
-      req.body;
+function authenticateSession(req, res, next) {
+  if (
+    req.session.username &&
+    req.session.userRole &&
+    (req.session.userRole === "admin" || req.session.userRole === "superadmin")
+  ) {
+    next();
+  } else {
+    res.status(401).json({ error: "Not authenticated" });
+  }
+}
 
-    const query = `UPDATE users
-      SET username = $1, password = $2, email = $3, first_name = $4, last_name = $5, role = $6, status = $7, updated_at = NOW()
-      WHERE id = $8
-      RETURNING *`;
 
-    const values = [
-      username,
-      password,
-      email,
-      first_name,
-      last_name,
-      role,
-      status,
-      id,
-    ];
+app.get("/users/profile", authenticateSession, (req, res) => {
+  const username = req.session.username;
+  const userRole = req.session.userRole;
 
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
+  // Your code to retrieve the user's profile information
+  // ...
+  async (req, res) => {
+    try {
+      const query = `SELECT * FROM users WHERE username = $1`;
+      const values = [req.username];
 
-    if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "User not found" }, res.json(result.rows[0]));
+      const client = await pool.connect();
+      const result = await client.query(query, values);
+      client.release();
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+
+  res.json({ username, userRole, profileData: "..." });
   }
 });
 
-// Delete a user by ID
-app.delete("/users/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+  
 
-    const query = "DELETE FROM users WHERE id = $1";
-    const values = [id];
+// Create a new user
+// app.post("/users", async (req, res) => {
+//   try {
+//     const { username, password, email, first_name, last_name, role, status } =
+//       req.body;
 
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
+//     const query = `INSERT INTO users
+//       (username, password, email, first_name, last_name, role, status)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7)
+//       RETURNING *`;
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
+//     const values = [
+//       username,
+//       password,
+//       email,
+//       first_name,
+//       last_name,
+//       role,
+//       status,
+//     ];
 
-    res.json({ message: "User deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+//     const client = await pool.connect();
+//     const result = await client.query(query, values);
+//     client.release();
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+//     res.json(result.rows[0]);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+// // Get all users
+// app.get("/users", async (req, res) => {
+//   try {
+//     const query = "SELECT * FROM users";
+//     const client = await pool.connect();
+//     const result = await client.query(query);
+//     client.release();
+
+//     res.json(result.rows);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+// // Get a specific user by ID
+// app.get("/users/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const query = "SELECT * FROM users WHERE id = $1";
+//     const values = [id];
+
+//     const client = await pool.connect();
+//     const result = await client.query(query, values);
+//     client.release();
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     res.json(result.rows[0]);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+// // Update a user by ID
+// app.put("/users/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { username, password, email, first_name, last_name, role, status } =
+//       req.body;
+
+//     const query = `UPDATE users
+//       SET username = $1, password = $2, email = $3, first_name = $4, last_name = $5, role = $6, status = $7, updated_at = NOW()
+//       WHERE id = $8
+//       RETURNING *`;
+
+//     const values = [
+//       username,
+//       password,
+//       email,
+//       first_name,
+//       last_name,
+//       role,
+//       status,
+//       id,
+//     ];
+
+//     const client = await pool.connect();
+//     const result = await client.query(query, values);
+//     client.release();
+
+//     if (result.rows.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ error: "User not found" }, res.json(result.rows[0]));
+//     }
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+// // Delete a user by ID
+// app.delete("/users/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const query = "DELETE FROM users WHERE id = $1";
+//     const values = [id];
+
+//     const client = await pool.connect();
+//     const result = await client.query(query, values);
+//     client.release();
+
+//     if (result.rowCount === 0) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     res.json({ message: "User deleted successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
 // Create a new user log
 app.post("/user_logs", async (req, res) => {
   try {
@@ -1871,4 +1998,12 @@ app.delete("/event_media/:id", async (req, res) => {
     console.error(`Error deleting event_media with ID ${id}`, error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+
+
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
