@@ -5,17 +5,19 @@ const { execSync } = require("node:child_process");
 const cors = require("cors");
 require('dotenv').config();
 const crypto = require("crypto");
-const fs = require("fs");
+// const fs = require("fs");
 const path = require("path");
 const session = require('express-session')
 const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcrypt');
 const app = express();
 const port = 3002;
+// const processDDLScripts = require('./middlewares/processDdlScripts');
 const usersRoutes = require('./routes/users');
 const userLogsRoutes = require('./routes/userLogs');
 const { pool } = require('./config/dbConfig');
 const pagesRoutes = require('./routes/pages');
+const menuRoutes = require('./routes/menu');
 const corsOptions = {
   origin: "*",
   credentials: true, //access-control-allow-credentials:true
@@ -26,6 +28,8 @@ app.use(cors(corsOptions)); // Use this after the variable declaration
 
 app.use(express.json());
 
+// app.use(processDDLScripts);
+
 // Reading files from migration folder.
 async function runDdlScripts() {
   const testFolder = "./ddl-scripts/";
@@ -34,10 +38,12 @@ async function runDdlScripts() {
 
 runDdlScripts();
 
+
 app.get("/", async (req, res) => {
+
   res.send("hello");
 
-  // res.send(result);
+    // res.send(result);
 });
 
 const sessionOptions = {
@@ -64,106 +70,8 @@ app.use('/user_logs', userLogsRoutes);
 
 app.use('/pages', pagesRoutes);
 
-// Create a new menu item
-app.post("/menu", async (req, res) => {
-  try {
-    const { page_id, position } = req.body;
+app.use('/menu', menuRoutes);
 
-    const query = `INSERT INTO menu (page_id, position) VALUES ($1, $2) RETURNING *`;
-    const values = [page_id, position];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// Get all menu items
-app.get("/menu", async (req, res) => {
-  try {
-    const query = "SELECT * FROM menu";
-    const client = await pool.connect();
-    const result = await client.query(query);
-    client.release();
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// Get a specific menu item by ID
-app.get("/menu/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = "SELECT * FROM menu WHERE id = $1";
-    const values = [id];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Menu item not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// Update a menu item by ID
-app.put("/menu/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { page_id, position } = req.body;
-
-    const query =
-      "UPDATE menu SET page_id = $1, position = $2 WHERE id = $3 RETURNING *";
-    const values = [page_id, position, id];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Menu item not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Delete a menu item by ID
-app.delete("/menu/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = "DELETE FROM menu WHERE id = $1";
-    const values = [id];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Menu item not found" });
-    }
-
-    res.json({ message: "Menu item deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 // GET all artists
 app.get("/artists", async (req, res) => {
   try {
