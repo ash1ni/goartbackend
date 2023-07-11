@@ -6,7 +6,7 @@ const {
   getAllPages,
   getPageById,
   updatePageById,
-  deletePageById,
+  deletePageById
 } = require('../controllers/pagesController');
 
 // Create a new page

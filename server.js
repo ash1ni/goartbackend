@@ -22,11 +22,6 @@ const corsOptions = {
   optionSuccessStatus: 200,
 };
 
-// // Create a connection pool to reuse database connections
-// const pool = new Pool({
-//   connectionString: "postgres://postgres:password@localhost:5432/postgres",
-// });
-
 app.use(cors(corsOptions)); // Use this after the variable declaration
 
 app.use(express.json());
