@@ -15,6 +15,7 @@ const port = 3002;
 const usersRoutes = require('./routes/users');
 const userLogsRoutes = require('./routes/userLogs');
 const { pool } = require('./config/dbConfig');
+const pagesRoutes = require('./routes/pages');
 const corsOptions = {
   origin: "*",
   credentials: true, //access-control-allow-credentials:true
@@ -66,151 +67,8 @@ app.use('/users', usersRoutes);
 
 app.use('/user_logs', userLogsRoutes);
 
-// Create a new page
-app.post("/pages", async (req, res) => {
-  try {
-    const {
-      slug,
-      title,
-      description,
-      content,
-      tags,
-      meta,
-      show_in_menu,
-      status,
-    } = req.body;
+app.use('/pages', pagesRoutes);
 
-    const query = `INSERT INTO pages
-      (slug, title, description, content, tags, meta, show_in_menu, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *`;
-
-    const values = [
-      slug,
-      title,
-      description,
-      content,
-      tags,
-      meta,
-      show_in_menu,
-      status,
-    ];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Get all pages
-app.get("/pages", async (req, res) => {
-  try {
-    const query = "SELECT * FROM pages";
-    const client = await pool.connect();
-    const result = await client.query(query);
-    client.release();
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Get a specific page by ID
-app.get("/pages/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = "SELECT * FROM pages WHERE id = $1";
-    const values = [id];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Page not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// Update a page by ID
-app.put("/pages/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      slug,
-      title,
-      description,
-      content,
-      tags,
-      meta,
-      show_in_menu,
-      status,
-    } = req.body;
-
-    const query = `UPDATE pages
-      SET slug = $1, title = $2, description = $3, content = $4, tags = $5, meta = $6, show_in_menu = $7, status = $8, updated_at = NOW()
-      WHERE id = $9
-      RETURNING *`;
-    const values = [
-      slug,
-      title,
-      description,
-      content,
-      tags,
-      meta,
-      show_in_menu,
-      status,
-      id,
-    ];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Page not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// Delete a page by ID
-app.delete("/pages/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = "DELETE FROM pages WHERE id = $1";
-    const values = [id];
-
-    const client = await pool.connect();
-    const result = await client.query(query, values);
-    client.release();
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Page not found" });
-    }
-
-    res.json({ message: "Page deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 // Create a new menu item
 app.post("/menu", async (req, res) => {
   try {
