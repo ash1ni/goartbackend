@@ -18,6 +18,7 @@ const { pool } = require('./config/dbConfig');
 const pagesRoutes = require('./routes/pages');
 const menuRoutes = require('./routes/menu');
 const artistRoutes = require('./routes/artist');
+const collectionRoutes = require('./routes/collection');
 const corsOptions = {
   origin: "*",
   credentials: true, //access-control-allow-credentials:true
@@ -72,85 +73,8 @@ app.use('/menu', menuRoutes);
 
 app.use('/artists', artistRoutes);
 
-// GET all collections
-app.get("/collections", async (req, res) => {
-  try {
-    const { rows } = await pool.query("SELECT * FROM collections");
-    res.json(rows);
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-// GET a collection by ID
-app.get("/collections/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { rows } = await pool.query(
-      "SELECT * FROM collections WHERE id = $1",
-      [id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Collection not found" });
-    } else {
-      res.json(rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-// CREATE a new collection
-app.post("/collections", async (req, res) => {
-  const { name, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      "INSERT INTO collections (name, status) VALUES ($1, $2) RETURNING *",
-      [name, status]
-    );
-    res.json(rows[0]);
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-// UPDATE a collection
-app.put("/collections/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      "UPDATE collections SET name = $1, status = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
-      [name, status, id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Collection not found" });
-    } else {
-      res.json(rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-// DELETE a collection
-app.delete("/collections/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { rows } = await pool.query(
-      "DELETE FROM collections WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Collection not found" });
-    } else {
-      res.json({ message: "Collection deleted successfully" });
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
+app.use('/collections', collectionRoutes);
+
 // Routes
 app.get("/artwork", async (req, res) => {
   try {
