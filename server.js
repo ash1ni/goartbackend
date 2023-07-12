@@ -12,12 +12,12 @@ const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcrypt');
 const app = express();
 const port = 3002;
-// const processDDLScripts = require('./middlewares/processDdlScripts');
 const usersRoutes = require('./routes/users');
 const userLogsRoutes = require('./routes/userLogs');
 const { pool } = require('./config/dbConfig');
 const pagesRoutes = require('./routes/pages');
 const menuRoutes = require('./routes/menu');
+const artistRoutes = require('./routes/artist');
 const corsOptions = {
   origin: "*",
   credentials: true, //access-control-allow-credentials:true
@@ -27,8 +27,6 @@ const corsOptions = {
 app.use(cors(corsOptions)); // Use this after the variable declaration
 
 app.use(express.json());
-
-// app.use(processDDLScripts);
 
 // Reading files from migration folder.
 async function runDdlScripts() {
@@ -72,88 +70,8 @@ app.use('/pages', pagesRoutes);
 
 app.use('/menu', menuRoutes);
 
-// GET all artists
-app.get("/artists", async (req, res) => {
-  try {
-    const { rows } = await pool.query("SELECT * FROM artists");
-    res.json(rows);
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
+app.use('/artists', artistRoutes);
 
-// GET an artist by ID
-app.get("/artists/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { rows } = await pool.query("SELECT * FROM artists WHERE id = $1", [
-      id,
-    ]);
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Artist not found" });
-    } else {
-      res.json(rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-
-// CREATE a new artist
-app.post("/artists", async (req, res) => {
-  const { name_original, short_name, slug, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      "INSERT INTO artists (name_original, short_name, slug, status) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name_original, short_name, slug, status]
-    );
-    res.json(rows[0]);
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-
-// UPDATE an artist
-app.put("/artists/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name_original, short_name, slug, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      "UPDATE artists SET name_original = $1, short_name = $2, slug = $3, status = $4, updated_at = NOW() WHERE id = $5 RETURNING *",
-      [name_original, short_name, slug, status, id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Artist not found" });
-    } else {
-      res.json(rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-
-// DELETE an artist
-app.delete("/artists/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { rows } = await pool.query(
-      "DELETE FROM artists WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Artist not found" });
-    } else {
-      res.json({ message: "Artist deleted successfully" });
-    }
-  } catch (error) {
-    console.error("Error executing query:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
 // GET all collections
 app.get("/collections", async (req, res) => {
   try {
