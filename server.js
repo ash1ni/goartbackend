@@ -10,16 +10,20 @@ const path = require("path");
 const session = require('express-session')
 const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcrypt');
+
 const app = express();
 const port = 3002;
+
+const { pool } = require('./config/dbConfig');
 const usersRoutes = require('./routes/users');
 const userLogsRoutes = require('./routes/userLogs');
-const { pool } = require('./config/dbConfig');
 const pagesRoutes = require('./routes/pages');
 const menuRoutes = require('./routes/menu');
 const artistRoutes = require('./routes/artist');
 const collectionRoutes = require('./routes/collection');
 const artworkRoutes = require('./routes/artwork');
+const exhibitionRouter = require('./routes/exhibition');
+
 const corsOptions = {
   origin: "*",
   credentials: true, //access-control-allow-credentials:true
@@ -40,9 +44,7 @@ runDdlScripts();
 
 
 app.get("/", async (req, res) => {
-
-  res.send("hello");
-
+    res.send("hello");
     // res.send(result);
 });
 
@@ -78,95 +80,97 @@ app.use('/collections', collectionRoutes);
 
 app.use('/artworks', artworkRoutes);
 
+app.use('/exhibitions', exhibitionRouter);
+
 //Exhibitions routes
 
-// Create an exhibition
-app.post("/exhibitions", async (req, res) => {
-  try {
-    const { title, subtitle, content, slug, tags, position, status } = req.body;
-    const query =
-      "INSERT INTO exhibitions (title, subtitle, content, slug, tags, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *";
-    const values = [title, subtitle, content, slug, tags, position, status];
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating exhibition:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while creating the exhibition." });
-  }
-});
+// // Create an exhibition
+// app.post("/exhibitions", async (req, res) => {
+//   try {
+//     const { title, subtitle, content, slug, tags, position, status } = req.body;
+//     const query =
+//       "INSERT INTO exhibitions (title, subtitle, content, slug, tags, position, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *";
+//     const values = [title, subtitle, content, slug, tags, position, status];
+//     const result = await pool.query(query, values);
+//     res.status(201).json(result.rows[0]);
+//   } catch (error) {
+//     console.error("Error creating exhibition:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while creating the exhibition." });
+//   }
+// });
 
-// Get all exhibitions
-app.get("/exhibitions", async (req, res) => {
-  try {
-    const query = `SELECT * FROM exhibitions`;
-    const result = await pool.query(query);
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error getting exhibitions:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while retrieving exhibitions." });
-  }
-});
+// // Get all exhibitions
+// app.get("/exhibitions", async (req, res) => {
+//   try {
+//     const query = `SELECT * FROM exhibitions`;
+//     const result = await pool.query(query);
+//     res.json(result.rows);
+//   } catch (error) {
+//     console.error("Error getting exhibitions:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while retrieving exhibitions." });
+//   }
+// });
 
-// Get a single exhibition
-app.get("/exhibitions/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const query = `SELECT * FROM exhibitions WHERE id = $1`;
-    const result = await pool.query(query, [id]);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Exhibition not found." });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error("Error getting exhibition:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while retrieving the exhibition." });
-  }
-});
-// Update an exhibition
-app.put("/exhibitions/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, subtitle, content, slug, tags, position, status } = req.body;
-    const query = `UPDATE exhibitions SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = current_timestamp WHERE id = $8 RETURNING *`;
-    const values = [title, subtitle, content, slug, tags, position, status, id];
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Exhibition not found." });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error("Error updating exhibition:", error);
-    res.status(500).json({
-      error: "An error occurred while retrieving exhibitions by id. ",
-    });
-  }
-});
-// Delete an exhibition
-app.delete("/exhibitions/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const query = `DELETE FROM exhibitions WHERE id = $1 RETURNING *`;
-    const result = await pool.query(query, [id]);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Exhibition not found." });
-    } else {
-      res.json({ message: "Exhibition deleted successfully." });
-    }
-  } catch (error) {
-    console.error("Error deleting exhibition:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while deleting the exhibition." });
-  }
-});
+// // Get a single exhibition
+// app.get("/exhibitions/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const query = `SELECT * FROM exhibitions WHERE id = $1`;
+//     const result = await pool.query(query, [id]);
+//     if (result.rows.length === 0) {
+//       res.status(404).json({ error: "Exhibition not found." });
+//     } else {
+//       res.json(result.rows[0]);
+//     }
+//   } catch (error) {
+//     console.error("Error getting exhibition:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while retrieving the exhibition." });
+//   }
+// });
+// // Update an exhibition
+// app.put("/exhibitions/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { title, subtitle, content, slug, tags, position, status } = req.body;
+//     const query = `UPDATE exhibitions SET title = $1, subtitle = $2, content = $3, slug = $4, tags = $5, position = $6, status = $7, updated_at = current_timestamp WHERE id = $8 RETURNING *`;
+//     const values = [title, subtitle, content, slug, tags, position, status, id];
+//     const result = await pool.query(query, values);
+//     if (result.rows.length === 0) {
+//       res.status(404).json({ error: "Exhibition not found." });
+//     } else {
+//       res.json(result.rows[0]);
+//     }
+//   } catch (error) {
+//     console.error("Error updating exhibition:", error);
+//     res.status(500).json({
+//       error: "An error occurred while retrieving exhibitions by id. ",
+//     });
+//   }
+// });
+// // Delete an exhibition
+// app.delete("/exhibitions/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const query = `DELETE FROM exhibitions WHERE id = $1 RETURNING *`;
+//     const result = await pool.query(query, [id]);
+//     if (result.rows.length === 0) {
+//       res.status(404).json({ error: "Exhibition not found." });
+//     } else {
+//       res.json({ message: "Exhibition deleted successfully." });
+//     }
+//   } catch (error) {
+//     console.error("Error deleting exhibition:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while deleting the exhibition." });
+//   }
+// });
 
 // GET all events
 app.get("/events", async (req, res) => {
