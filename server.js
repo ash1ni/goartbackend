@@ -25,6 +25,7 @@ const artworkRoutes = require('./routes/artwork');
 const exhibitionRouter = require('./routes/exhibition');
 const eventsRouter = require('./routes/events');
 const multimediaRouter = require('./routes/multimedia');
+const pickArtworkRouter = require('./routes/pickArtwork')
 
 const corsOptions = {
   origin: "*",
@@ -88,99 +89,7 @@ app.use('/events', eventsRouter);
 
 app.use('/multimedia', multimediaRouter);
 
-// Get all pick_artworks
-app.get("/pick_artworks", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM pick_artworks");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching pick_artworks:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-// Get a pick_artwork by ID
-app.get("/pick_artworks/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      "SELECT * FROM pick_artworks WHERE id = $1",
-      [id]
-    );
-    const pick_artwork = result.rows[0];
-    if (pick_artwork) {
-      res.json(pick_artwork);
-    } else {
-      res.status(404).send(`Pick_artwork with ID ${id} not found`);
-    }
-  } catch (error) {
-    console.error(`Error fetching pick_artwork with ID ${id}:`, error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Create a new pick_artwork
-app.post("/pick_artworks", async (req, res) => {
-  const { artwork_id, position, status } = req.body;
-
-  // Validate request body
-  if (!artwork_id || !position || !status) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    const result = await pool.query(
-      "INSERT INTO pick_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *",
-      [artwork_id, position, status]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating pick_artwork:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Update a pick_artwork
-app.put("/pick_artworks/:id", async (req, res) => {
-  const { id } = req.params;
-  const { artwork_id, position, status } = req.body;
-
-  // Validate request body
-  if (!artwork_id || !position || !status) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    const result = await pool.query(
-      "UPDATE pick_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *",
-      [artwork_id, position, status, id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Pick artwork not found" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error updating pick_artwork:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Delete a pick_artwork
-app.delete("/pick_artworks/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      "DELETE FROM pick_artworks WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Pick artwork not found" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error deleting pick_artwork:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+app.use('/pick-artworks', pickArtworkRouter);
 
 // Get all spotlight_artworks
 app.get("/spotlight_artworks", async (req, res) => {
