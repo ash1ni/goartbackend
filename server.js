@@ -12,7 +12,7 @@ const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcrypt');
 
 const app = express();
-const port = 3002;
+const port = process.env.SERVER_PORT;
 
 const { pool } = require('./config/dbConfig');
 const usersRoutes = require('./routes/users');
@@ -61,7 +61,7 @@ const sessionOptions = {
     conString: "postgres://postgres:password@localhost/postgres",
     tableName: "session",
   }),
-  secret: "$2b$10$jKiND5.3H8HkQY5S/HKeTuTqVL.8UTjOCKLmbYVu4VNaJo/mOy4zS", // Replace with your own session secret
+  secret: process.env.SESSION_SECRET, // Replace with your own session secret
   resave: false,
   saveUninitialized: false,
   cookie: {
