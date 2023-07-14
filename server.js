@@ -28,6 +28,7 @@ const multimediaRouter = require('./routes/multimedia');
 const pickArtworkRouter = require('./routes/pickArtwork')
 const spotlightArtworkRouter = require('./routes/spotlightArtwork');
 const eventArtworkRouter = require('./routes/eventArtwork');
+const mediaRoutes = require('./routes/media');
 
 const corsOptions = {
   origin: "*",
@@ -97,125 +98,7 @@ app.use('/spotlight-artworks', spotlightArtworkRouter);
 
 app.use('/event-artworks', eventArtworkRouter);
 
-// Fetch all media
-app.get("/media", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM media");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Fetch a specific media file by ID
-app.get("/media/:id", async (req, res) => {
-  const id = req.params.id;
-  try {
-    const result = await pool.query("SELECT * FROM media WHERE id = $1", [id]);
-    if (result.rowCount === 0) {
-      res.status(404).json({ error: "Media file not found" });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Store the file path in the database
-app.post("/media", async (req, res) => {
-  if (!req.body.file || !req.body.filename) {
-    res.status(400).json({ error: "Missing file or filename" });
-    return;
-  }
-
-  const { file, filename } = req.body;
-
-  // Create a Readable stream from the base64 file data
-  const fileStream = Readable.from(file, "base64");
-
-  // Generate a hash code for unique file names
-  const hash = crypto.createHash("sha1");
-  hash.update(file);
-  const hashValue = hash.digest("hex");
-
-  // Generate a unique filename based on the hash code and original filename
-  const uniqueFilename = hashValue + "-" + filename;
-
-  try {
-    // Get current timestamp
-    const now = new Date();
-
-    // Write the file to disk in the 'uploads' directory
-    const filePath = path.join(__dirname, "uploads", uniqueFilename);
-    const writeStream = fs.createWriteStream(filePath);
-    fileStream.pipe(writeStream);
-
-    writeStream.on("finish", async () => {
-      // Store the file path in the database
-      const result = await pool.query(
-        "INSERT INTO media (name, path, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $4) RETURNING *",
-        [filename, filePath, true, now]
-      );
-      res.status(201).json(result.rows[0]);
-    });
-  } catch (error) {
-    console.error("Error writing file", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Update a media entry
-app.put("/api/media/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-
-  try {
-    // Check if the media entry exists
-    const media = await pool.query("SELECT * FROM media WHERE id = $1", [id]);
-    if (media.rows.length === 0) {
-      res.status(404).json({ error: "Media entry not found" });
-      return;
-    }
-
-    // Update the name of the media entry
-    const updatedMedia = await pool.query(
-      "UPDATE media SET name = $1 WHERE id = $2 RETURNING *",
-      [name, id]
-    );
-
-    res.json(updatedMedia.rows[0]);
-  } catch (error) {
-    console.error("Error updating media", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Delete a media file by ID
-app.delete("/media/:id", async (req, res) => {
-  const id = req.params.id;
-  try {
-    const result = await pool.query(
-      "DELETE FROM media WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rowCount === 0) {
-      res.status(404).json({ error: "Media file not found" });
-    } else {
-      const deletedFilePath = `uploads/${result.rows[0].path}`;
-      fs.unlinkSync(deletedFilePath); // Delete the actual file from the server
-      res.json({ message: "Media file deleted successfully" });
-    }
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Serve the media files in the frontend
-app.use("/uploads", express.static("uploads"));
+app.use('/media', mediaRoutes);
 
 // Fetch all artist media entries
 app.get("/artist-media", async (req, res) => {
