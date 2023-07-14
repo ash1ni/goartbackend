@@ -27,6 +27,7 @@ const eventsRouter = require('./routes/events');
 const multimediaRouter = require('./routes/multimedia');
 const pickArtworkRouter = require('./routes/pickArtwork')
 const spotlightArtworkRouter = require('./routes/spotlightArtwork');
+const eventArtworkRouter = require('./routes/eventArtwork');
 
 const corsOptions = {
   origin: "*",
@@ -93,6 +94,8 @@ app.use('/multimedia', multimediaRouter);
 app.use('/pick-artworks', pickArtworkRouter);
 
 app.use('/spotlight-artworks', spotlightArtworkRouter);
+
+app.use('/event-artworks', eventArtworkRouter);
 
 // Get all event artworks
 app.get("/event_artworks", async (req, res) => {
