@@ -29,6 +29,7 @@ const pickArtworkRouter = require('./routes/pickArtwork')
 const spotlightArtworkRouter = require('./routes/spotlightArtwork');
 const eventArtworkRouter = require('./routes/eventArtwork');
 const mediaRoutes = require('./routes/media');
+const artistMediaRoutes = require('./routes/artistMedia');
 
 const corsOptions = {
   origin: "*",
@@ -100,99 +101,7 @@ app.use('/event-artworks', eventArtworkRouter);
 
 app.use('/media', mediaRoutes);
 
-// Fetch all artist media entries
-app.get("/artist-media", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM artist_media");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching artist media entries", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Fetch artist media by ID
-app.get("/artist-media/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      "SELECT * FROM artist_media WHERE id = $1",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Artist media not found" });
-      return;
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error fetching artist media", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Create an artist media entry
-app.post("/artist-media", async (req, res) => {
-  const { artist_id, media_id, position } = req.body;
-
-  try {
-    const result = await pool.query(
-      "INSERT INTO artist_media (artist_id, media_id, position) VALUES ($1, $2, $3) RETURNING *",
-      [artist_id, media_id, position]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating artist media entry", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Update an artist media entry
-app.put("/artist-media/:id", async (req, res) => {
-  const { id } = req.params;
-  const { artist_id, media_id, position } = req.body;
-
-  try {
-    const result = await pool.query(
-      "UPDATE artist_media SET artist_id = $1, media_id = $2, position = $3 WHERE id = $4 RETURNING *",
-      [artist_id, media_id, position, id]
-    );
-
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Artist media entry not found" });
-      return;
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error updating artist media entry", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Delete an artist media entry
-app.delete("/artist-media/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      "DELETE FROM artist_media WHERE id = $1 RETURNING *",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Artist media entry not found" });
-      return;
-    }
-
-    res.json({ message: "Artist media entry deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting artist media entry", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+app.use('/artist-media', artistMediaRoutes);
 
 // GET all collection_media records
 app.get("/collection_media", async (req, res) => {
