@@ -26,6 +26,7 @@ const exhibitionRouter = require('./routes/exhibition');
 const eventsRouter = require('./routes/events');
 const multimediaRouter = require('./routes/multimedia');
 const pickArtworkRouter = require('./routes/pickArtwork')
+const spotlightArtworkRouter = require('./routes/spotlightArtwork');
 
 const corsOptions = {
   origin: "*",
@@ -91,88 +92,7 @@ app.use('/multimedia', multimediaRouter);
 
 app.use('/pick-artworks', pickArtworkRouter);
 
-// Get all spotlight_artworks
-app.get("/spotlight_artworks", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM spotlight_artworks");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error getting spotlight_artworks:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Get spotlight_artwork by id
-app.get("/spotlight_artworks/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      "SELECT * FROM spotlight_artworks WHERE id = $1",
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Spotlight artwork not found" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error getting spotlight_artwork:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Create a new spotlight artwork
-app.post("/spotlight_artworks", async (req, res) => {
-  const { artwork_id, position, status } = req.body;
-  try {
-    const result = await pool.query(
-      "INSERT INTO spotlight_artworks (artwork_id, position, status) VALUES ($1, $2, $3) RETURNING *",
-      [artwork_id, position, status]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Update an existing spotlight artwork
-app.put("/spotlight_artworks/:id", async (req, res) => {
-  const id = req.params.id;
-  const { artwork_id, position, status } = req.body;
-  try {
-    const result = await pool.query(
-      "UPDATE spotlight_artworks SET artwork_id = $1, position = $2, status = $3 WHERE id = $4 RETURNING *",
-      [artwork_id, position, status, id]
-    );
-    if (result.rowCount === 0) {
-      res.status(404).json({ error: "Spotlight artwork not found" });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Delete a spotlight artwork
-app.delete("/spotlight_artworks/:id", async (req, res) => {
-  const id = req.params.id;
-  try {
-    const result = await pool.query(
-      "DELETE FROM spotlight_artworks WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rowCount === 0) {
-      res.status(404).json({ error: "Spotlight artwork not found" });
-    } else {
-      res.json({ message: "Spotlight artwork deleted successfully" });
-    }
-  } catch (error) {
-    console.error("Error executing query", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+app.use('/spotlight-artworks', spotlightArtworkRouter);
 
 // Get all event artworks
 app.get("/event_artworks", async (req, res) => {
