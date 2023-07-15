@@ -33,6 +33,7 @@ const artistMediaRoutes = require('./routes/artistMedia');
 const collectionMediaRoutes = require('./routes/collectionMedia')
 const artworkMediaRoutes = require('./routes/artworkMedia');
 const exhibitionMediaRoutes = require('./routes/exhibitionMedia');
+const eventMediaRoutes = require('./routes/eventMedia');
 
 const corsOptions = {
   origin: "*",
@@ -112,93 +113,7 @@ app.use('/artwork-media', artworkMediaRoutes);
 
 app.use('/exhibition-media', exhibitionMediaRoutes);
 
-// event-media routes
-// Get all event_media records
-app.get("/event_media", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM event_media");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error retrieving event_media", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Get a single event_media record by ID
-app.get("/event_media/:id", async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const result = await pool.query("SELECT * FROM event_media WHERE id = $1", [
-      id,
-    ]);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Event media not found" });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error(`Error retrieving event_media with ID ${id}`, error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Create a new event_media record
-app.post("/event_media", async (req, res) => {
-  const { event_id, media_id, position } = req.body;
-
-  try {
-    const result = await pool.query(
-      "INSERT INTO event_media (event_id, media_id, position) VALUES ($1, $2, $3) RETURNING *",
-      [event_id, media_id, position]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating event_media", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Update an event_media record
-app.put("/event_media/:id", async (req, res) => {
-  const id = req.params.id;
-  const { event_id, media_id, position } = req.body;
-
-  try {
-    const result = await pool.query(
-      "UPDATE event_media SET event_id = $1, media_id = $2, position = $3 WHERE id = $4 RETURNING *",
-      [event_id, media_id, position, id]
-    );
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Event media not found" });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error(`Error updating event_media with ID ${id}`, error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Delete an event_media record
-app.delete("/event_media/:id", async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const result = await pool.query(
-      "DELETE FROM event_media WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Event media not found" });
-    } else {
-      res.json({ message: "Event media deleted successfully" });
-    }
-  } catch (error) {
-    console.error(`Error deleting event_media with ID ${id}`, error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+app.use('/event-media', eventMediaRoutes);
 
 // Start the server
 app.listen(port, () => {
