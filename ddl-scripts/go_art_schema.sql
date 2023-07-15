@@ -199,3 +199,12 @@ CREATE TABLE IF NOT EXISTS event_media(
     FOREIGN KEY (event_id) REFERENCES events(id),
     FOREIGN KEY (media_id) REFERENCES media(id)
 );
+
+CREATE TABLE IF NOT EXISTS "session" (
+  sid VARCHAR NOT NULL COLLATE "default",
+  sess JSON NOT NULL,
+  expire TIMESTAMP(6) NOT NULL,
+  PRIMARY KEY (sid, expire),
+  UNIQUE (sid)
+);
+
