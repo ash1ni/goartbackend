@@ -1,20 +1,23 @@
 const { readFile, readFileSync, readdirSync, readdir } = require("fs");
 const { Readable } = require("stream");
 const express = require("express");
+const bodyparser = require("body-parser");
 const { execSync } = require("node:child_process");
 const cors = require("cors");
 require('dotenv').config();
 const crypto = require("crypto");
 // const fs = require("fs");
 const path = require("path");
-const session = require('express-session')
-const pgSession = require('connect-pg-simple')(session);
+// const session = require('express-session')
+// const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcrypt');
+const passport = require('passport');
 
 const app = express();
 const port = process.env.SERVER_PORT;
 
 const { pool } = require('./config/dbConfig');
+const sessionMiddleware = require('./middlewares/sessionMiddleware');
 const usersRoutes = require('./routes/users');
 const userLogsRoutes = require('./routes/userLogs');
 const pagesRoutes = require('./routes/pages');
@@ -42,8 +45,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions)); // Use this after the variable declaration
-
+app.use(sessionMiddleware);
+app.use(bodyparser.urlencoded({ extended: false }));
+app.use(bodyparser.json());
 app.use(express.json());
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Reading files from migration folder.
 async function runDdlScripts() {
@@ -59,23 +67,24 @@ app.get("/", async (req, res) => {
     // res.send(result);
 });
 
-const sessionOptions = {
-  store: new pgSession({
-    // Configure the PostgreSQL connection details
-    conString: "postgres://postgres:password@localhost/postgres",
-    tableName: "session",
-  }),
-  secret: process.env.SESSION_SECRET, // Replace with your own session secret
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000, // Set the session duration (30 days in this example)
-    secure: true, // Set to true if using HTTPS
-    httpOnly: true,
-  },
-};
+// const sessionOptions = {
+//   store: new pgSession({
+//     // Configure the PostgreSQL connection details
+//     conString: "postgres://postgres:password@localhost/postgres",
+//     tableName: "session",
+//   }),
+//   secret: process.env.SESSION_SECRET, // Replace with your own session secret
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: {
+//     maxAge: 30 * 24 * 60 * 60 * 1000, // Set the session duration (30 days in this example)
+//     secure: true, // Set to true if using HTTPS
+//     httpOnly: true,
+//   },
+// };
 
-app.use(session(sessionOptions));
+
+
 
 app.use('/users', usersRoutes);
 
